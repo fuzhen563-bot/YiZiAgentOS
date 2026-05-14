@@ -1,9 +1,8 @@
 # 亦梓AgentOS
+**企业级 AI Agent 操作系统** — 11 层分层架构，从基础设施到用户体验全面覆盖。
 <p align="center">
   <img src="logo@2x.png" alt="亦梓AgentOS Logo" width="200">
 </p>
-> **企业级 AI Agent 操作系统** — 11 层分层架构，从基础设施到用户体验全面覆盖。
-
 [![Java](https://img.shields.io/badge/Java-21+-blue.svg)](https://adoptium.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![License](https://img.shields.io/badge/license-Apache--2.0-red.svg)](LICENSE)
