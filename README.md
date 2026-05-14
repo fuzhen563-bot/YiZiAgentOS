@@ -186,6 +186,12 @@ python3 -m http.server 8080
 
 ---
 
+## 开发人员
+@xiaoqianlan
+
+@fuzhen563-bot
+---
+
 ##  License
 
 Apache License 2.0
