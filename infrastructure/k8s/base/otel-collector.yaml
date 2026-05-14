@@ -1,0 +1,179 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: agentos-infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector:0.109.0
+          ports:
+            - containerPort: 4317
+              name: otlp-grpc
+              protocol: TCP
+            - containerPort: 4318
+              name: otlp-http
+              protocol: TCP
+            - containerPort: 14268
+              name: jaeger-http
+              protocol: TCP
+            - containerPort: 6831
+              name: jaeger-thrift-compact
+              protocol: UDP
+            - containerPort: 9411
+              name: zipkin
+              protocol: TCP
+            - containerPort: 8889
+              name: prometheus-metrics
+              protocol: TCP
+          args:
+            - --config=/etc/otel-collector-config.yaml
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          volumeMounts:
+            - name: otel-config
+              mountPath: /etc/otel-collector-config.yaml
+              subPath: config.yaml
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: otel-config
+          configMap:
+            name: otel-collector-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: agentos-infra
+spec:
+  selector:
+    app: otel-collector
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+    - name: jaeger-http
+      port: 14268
+      targetPort: 14268
+    - name: jaeger-thrift
+      port: 6831
+      targetPort: 6831
+    - name: zipkin
+      port: 9411
+      targetPort: 9411
+    - name: prometheus
+      port: 8889
+      targetPort: 8889
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: agentos-infra
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      jaeger:
+        protocols:
+          thrift_http:
+            endpoint: 0.0.0.0:14268
+          thrift_compact:
+            endpoint: 0.0.0.0:6831
+      zipkin:
+        endpoint: 0.0.0.0:9411
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'otel-collector'
+              static_configs:
+                - targets: ['localhost:8888']
+    processors:
+      batch:
+        timeout: 10s
+        send_batch_size: 1024
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 80
+        spike_limit_percentage: 25
+      k8sattributes:
+        passthrough: false
+        filter:
+          node_from_env_var: KUBE_NODE_NAME
+        extract:
+          metadata:
+            - k8s.namespace.name
+            - k8s.deployment.name
+            - k8s.pod.name
+            - k8s.container.name
+      resourcedetection:
+        detectors:
+          - env
+          - system
+          - k8s
+    exporters:
+      otlp:
+        endpoint: jaeger-collector:4317
+        tls:
+          insecure: true
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+        namespace: agentos
+        const_labels:
+          service: agentos
+      loki:
+        endpoint: http://loki:3100/loki/api/v1/push
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp, jaeger, zipkin]
+          processors: [memory_limiter, k8sattributes, batch]
+          exporters: [otlp]
+        metrics:
+          receivers: [prometheus]
+          processors: [memory_limiter, batch]
+          exporters: [prometheus]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, batch]
+          exporters: [loki]
+      telemetry:
+        logs:
+          level: info
+        metrics:
+          address: 0.0.0.0:8888

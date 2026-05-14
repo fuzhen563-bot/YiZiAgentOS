@@ -1,0 +1,10 @@
+server:
+  port: 9091
+spring:
+  application:
+    name: knowledge-engine
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

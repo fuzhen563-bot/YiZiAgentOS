@@ -1,0 +1,37 @@
+# Spring Boot Observability Configuration
+# Place this in src/main/resources/application-observability.yml
+# Activate with: SPRING_PROFILES_ACTIVE=observability
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name:agentos}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
+      slo:
+        http.server.requests: 100ms, 200ms, 500ms, 1s, 2s
+
+spring:
+  application:
+    name: agentos-server
+
+logging:
+  config: classpath:logback-spring.xml

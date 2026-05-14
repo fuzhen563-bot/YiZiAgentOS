@@ -1,0 +1,13 @@
+apiVersion: v2
+name: agentos
+description: AgentOS - Enterprise AI Agent Operating System
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - ai
+  - agent
+  - llm
+home: https://github.com/agentos/agentos
+sources:
+  - https://github.com/agentos/agentos

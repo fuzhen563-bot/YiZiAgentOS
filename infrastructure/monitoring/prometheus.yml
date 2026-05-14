@@ -1,0 +1,48 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files: []
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'model-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['model-gateway:9090']
+        labels:
+          app: model-gateway
+
+  - job_name: 'knowledge-engine'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['knowledge-engine:9091']
+        labels:
+          app: knowledge-engine
+
+  - job_name: 'mcp-registry'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['mcp-registry:9092']
+        labels:
+          app: mcp-registry
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          app: postgres
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          app: redis

@@ -1,0 +1,144 @@
+# Jaeger Distributed Tracing
+# Standard Deployment + Service (no CRD dependency)
+# Requires: Elasticsearch (or use in-memory storage for dev)
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger-collector
+  namespace: agentos-infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger-collector
+  template:
+    metadata:
+      labels:
+        app: jaeger-collector
+    spec:
+      containers:
+        - name: jaeger-collector
+          image: jaegertracing/jaeger-collector:1.57
+          ports:
+            - containerPort: 14269
+              name: admin-http
+            - containerPort: 14268
+              name: collector-http
+            - containerPort: 14250
+              name: collector-grpc
+            - containerPort: 9411
+              name: zipkin
+          args:
+            - "--collector.zipkin.host-port=:9411"
+          env:
+            - name: SPAN_STORAGE_TYPE
+              value: elasticsearch
+            - name: ES_SERVER_URLS
+              value: http://elasticsearch:9200
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-collector
+  namespace: agentos-infra
+spec:
+  selector:
+    app: jaeger-collector
+  ports:
+    - name: admin-http
+      port: 14269
+      targetPort: 14269
+    - name: collector-http
+      port: 14268
+      targetPort: 14268
+    - name: collector-grpc
+      port: 14250
+      targetPort: 14250
+    - name: zipkin
+      port: 9411
+      targetPort: 9411
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger-query
+  namespace: agentos-infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger-query
+  template:
+    metadata:
+      labels:
+        app: jaeger-query
+    spec:
+      containers:
+        - name: jaeger-query
+          image: jaegertracing/jaeger-query:1.57
+          ports:
+            - containerPort: 16686
+              name: query-http
+            - containerPort: 16685
+              name: query-grpc
+          env:
+            - name: SPAN_STORAGE_TYPE
+              value: elasticsearch
+            - name: ES_SERVER_URLS
+              value: http://elasticsearch:9200
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-query
+  namespace: agentos-infra
+spec:
+  selector:
+    app: jaeger-query
+  ports:
+    - name: query-http
+      port: 16686
+      targetPort: 16686
+    - name: query-grpc
+      port: 16685
+      targetPort: 16685
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jaeger-ingress
+  namespace: agentos-infra
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+spec:
+  rules:
+    - host: jaeger.agentos.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: jaeger-query
+                port:
+                  number: 16686

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>亦梓AgentOS · Admin</title>
+<style>
+:root{--bg:#0c0f15;--bg-2:#14181f;--bg-3:#1c212b;--bg-4:#252b36;--text:#e8edf5;--text-2:#94a3b8;--text-3:#5c6b7e;--accent:#d97757;--accent-hover:#e2876a;--accent-dim:rgba(217,119,87,0.12);--border:#252b36;--border-hover:#334155;--success:#22c55e;--warning:#eab308;--radius:8px;--radius-sm:6px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans SC','PingFang SC',sans-serif;--shadow:0 4px 24px rgba(0,0,0,.3)}
+[data-theme="light"]{--bg:#f5f0eb;--bg-2:#fffcf8;--bg-3:#f0ebe5;--bg-4:#e5dfd8;--text:#1e293b;--text-2:#64748b;--text-3:#94a3b8;--accent:#d97757;--accent-hover:#c46a4e;--accent-dim:rgba(217,119,87,0.08);--border:#e0d9d0;--border-hover:#c8c0b6;--shadow:0 4px 24px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;display:flex;height:100vh;transition:background .25s,color .25s}
+.sidebar{width:220px;background:var(--bg-2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-head{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.sidebar-head .logo{width:28px;height:28px;border-radius:6px;object-fit:contain}
+.sidebar-head .lt{font-size:15px;font-weight:700}.sidebar-head .lt span{color:var(--accent)}
+.sidebar-head .ls{font-size:10px;color:var(--text-3)}
+.sidebar-nav{padding:10px;flex:1;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius);cursor:pointer;color:var(--text-2);margin-bottom:2px;transition:all .12s;font-size:13px}
+.nav-item:hover,.nav-item.active{background:var(--bg-3);color:var(--text)}
+.nav-item.active{color:var(--accent);border-left:3px solid var(--accent);background:var(--accent-dim)}
+.nav-item .ic{font-size:16px;width:20px;text-align:center}
+.sidebar-foot{padding:10px 14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.sidebar-foot button{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 10px;color:var(--text-2);cursor:pointer;font-size:12px;transition:all .12s}
+.sidebar-foot button:hover{border-color:var(--accent);color:var(--accent)}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:12px;padding:0 20px;height:52px;border-bottom:1px solid var(--border);background:var(--bg-2);flex-shrink:0}
+.topbar h1{font-size:17px;font-weight:700}
+.topbar .sub{font-size:12px;color:var(--text-2)}
+.topbar-actions{margin-left:auto;display:flex;gap:6px}
+.btn{padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);font-size:12px;cursor:pointer;transition:all .12s;text-decoration:none}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card h3{font-size:14px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.row:last-child{border:none}.row .val{color:var(--accent);font-weight:600}.row .lbl{color:var(--text-2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.stat{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+.stat .num{font-size:30px;font-weight:700;color:var(--accent)}
+.stat .lbl{font-size:12px;color:var(--text-2);margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+th{color:var(--text-2);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.badge.green{background:rgba(34,197,94,0.12);color:#22c55e}
+.badge.yellow{background:rgba(234,179,8,0.12);color:#eab308}
+.badge.blue{background:rgba(59,130,246,0.12);color:#3b82f6}
+.badge.red{background:rgba(239,68,68,0.12);color:#ef4444}
+.fix-note{text-align:center;padding:20px;color:var(--text-3);font-size:12px;line-height:1.8}
+.fix-note code{background:var(--bg-3);padding:2px 6px;border-radius:3px;font-size:11px}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+@media(max-width:768px){.sidebar{display:none}}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-head">
+    <img src="../logo.png" alt="" class="logo" onerror="this.style.display='none'">
+    <div><div class="lt">亦梓<span>AgentOS</span></div><div class="ls" id="slogan"></div></div>
+  </div>
+  <div class="sidebar-nav" id="navContainer">
+    <div class="nav-item active" data-page="dashboard"><span class="ic">📊</span><span class="nav-label">Dashboard</span></div>
+    <div class="nav-item" data-page="services"><span class="ic">⚙️</span><span class="nav-label">Services</span></div>
+    <div class="nav-item" data-page="tenants"><span class="ic">🏢</span><span class="nav-label">Tenants</span></div>
+    <div class="nav-item" data-page="users"><span class="ic">👥</span><span class="nav-label">Users</span></div>
+    <div class="nav-item" data-page="billing"><span class="ic">💰</span><span class="nav-label">Billing</span></div>
+  </div>
+  <div class="sidebar-foot">
+    <button id="langBtn">EN</button>
+    <button id="themeBtn">🌙</button>
+  </div>
+</div>
+<div class="main">
+  <div class="topbar">
+    <div><h1 id="pageTitle">Dashboard</h1><div class="sub" id="pageSub"></div></div>
+    <div class="topbar-actions"><a class="btn" href="../index.html" id="backBtn">← Chat</a></div>
+  </div>
+  <div class="content" id="content">
+    <div class="fix-note" id="welcomeNote">
+      <h3>Welcome to 亦梓AgentOS Admin</h3>
+      <p style="margin-top:8px;color:var(--text-2)">If you see this message, the page is working in read-only mode.</p>
+      <p style="margin-top:4px;color:var(--text-2)">For full functionality, serve the files via HTTP:</p>
+      <p style="margin-top:12px"><code>cd D:\万岳AgentOS\agentos\web-ui && python3 -m http.server 8080</code></p>
+      <p style="margin-top:4px">Then open <code>http://localhost:8080/admin/</code></p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== I18N ======
+var LANG_DATA = {
+  zh: {
+    dashboard: '总览', services: '服务', tenants: '租户', users: '用户', billing: '账单',
+    dSub: '系统概览与指标', sSub: '服务运行状态', tSub: '租户管理与隔离', uSub: '用户与权限管理', bSub: '订阅与用量管理',
+    dashboardT: '总览 Dashboard', servicesT: '服务状态', tenantsT: '租户管理', usersT: '用户管理', billingT: '账单管理',
+    up: '运行中', down: '未启动', noTenants: '暂无租户', backToChat: '← 聊天',
+    total: '总计', agents: '智能体', tools: '工具', plan: '套餐', created: '创建时间',
+    name: '名称', email: '邮箱', role: '角色', status: '状态', action: '操作', port: '端口',
+    free: '免费', pro: '专业', enterprise: '企业', active: '活跃',
+    slogan: '管理控制台',
+    subscription: '订阅信息', usage: '用量统计', invoice: '账单', basePrice: '基础费用',
+    overage: '超额费用', month: '月', records: '条记录', tokens: 'Token',
+    note1: '看到此页面说明管理后台正常运行',
+    note2: '完整功能需要 HTTP 服务方式访问',
+    srv: '服务', health: '健康',
+    welcome: '欢迎使用亦梓AgentOS 管理后台'
+  },
+  en: {
+    dashboard: 'Dashboard', services: 'Services', tenants: 'Tenants', users: 'Users', billing: 'Billing',
+    dSub: 'System overview & metrics', sSub: 'Service status', tSub: 'Tenant management & isolation',
+    uSub: 'User & permission management', bSub: 'Subscription & usage',
+    dashboardT: 'Dashboard', servicesT: 'Services', tenantsT: 'Tenant Management', usersT: 'User Management', billingT: 'Billing',
+    up: 'Up', down: 'Down', noTenants: 'No tenants yet', backToChat: '← Chat',
+    total: 'Total', agents: 'Agents', tools: 'Tools', plan: 'Plan', created: 'Created',
+    name: 'Name', email: 'Email', role: 'Role', status: 'Status', action: 'Action', port: 'Port',
+    free: 'Free', pro: 'Pro', enterprise: 'Enterprise', active: 'Active',
+    slogan: 'Management Console',
+    subscription: 'Subscription', usage: 'Usage', invoice: 'Invoice', basePrice: 'Base Price',
+    overage: 'Overage', month: 'month', records: 'records', tokens: 'Tokens',
+    note1: 'Admin panel is running in read-only mode',
+    note2: 'Full functionality requires HTTP serving',
+    srv: 'Service', health: 'Health',
+    welcome: 'Welcome to 亦梓AgentOS Admin'
+  }
+};
+
+var lang = localStorage.getItem('aios-admin-lang') || 'zh';
+var currentPage = 'dashboard';
+
+function tr(key) {
+  var data = LANG_DATA[lang] || LANG_DATA.zh;
+  return data[key] || key;
+}
+
+function applyLang() {
+  document.getElementById('slogan').textContent = tr('slogan');
+  document.getElementById('pageTitle').textContent = tr(currentPage + 'T') || tr(currentPage);
+  document.getElementById('pageSub').textContent = tr(currentPage.charAt(0).toLowerCase() + currentPage.slice(1) + 'Sub') || '';
+  document.getElementById('backBtn').textContent = tr('backToChat');
+  document.querySelectorAll('.nav-label').forEach(function(el) {
+    var page = el.closest('.nav-item').dataset.page;
+    el.textContent = tr(page);
+  });
+  document.getElementById('langBtn').textContent = lang === 'zh' ? 'EN' : '中';
+}
+
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('aios-admin-lang', lang);
+  applyLang();
+  loadPage(currentPage);
+}
+
+function toggleTheme() {
+  var h = document.documentElement;
+  var b = document.getElementById('themeBtn');
+  if (h.getAttribute('data-theme') === 'light') {
+    h.removeAttribute('data-theme'); b.textContent = '🌙';
+    localStorage.setItem('aios-admin-theme', 'dark');
+  } else {
+    h.setAttribute('data-theme', 'light'); b.textContent = '☀️';
+    localStorage.setItem('aios-admin-theme', 'light');
+  }
+}
+
+function loadTheme() {
+  if (localStorage.getItem('aios-admin-theme') === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('themeBtn').textContent = '☀️';
+  }
+}
+
+function switchPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(function(n) {
+    n.classList.toggle('active', n.dataset.page === page);
+  });
+  applyLang();
+  loadPage(page);
+}
+
+function loadPage(page) {
+  var el = document.getElementById('content');
+  if (page === 'dashboard') loadDashboard(el);
+  else if (page === 'services') loadServices(el);
+  else if (page === 'tenants') loadTenants(el);
+  else if (page === 'users') loadUsers(el);
+  else if (page === 'billing') loadBilling(el);
+}
+
+function fetchWithTimeout(url, ms) {
+  return fetch(url, { signal: AbortSignal.timeout(ms) }).catch(function() { return null; });
+}
+
+function loadDashboard(el) {
+  el.innerHTML = '<div class="grid" id="statGrid"></div><div style="margin-top:16px"><div class="card"><h3>' + tr('services') + '</h3><table><thead><tr><th>' + tr('srv') + '</th><th>' + tr('port') + '</th><th>' + tr('status') + '</th></tr></thead><tbody id="svcTable"></tbody></table></div></div>';
+  var ports = {9090:'Model Gateway',9091:'Knowledge Engine',9092:'MCP Registry',9093:'Secure Exec',9094:'Evolution',9095:'Agent Runtime',9096:'Goal Engine',9097:'Control Plane'};
+  var up = 0, rows = '';
+  var keys = Object.keys(ports);
+  var pending = keys.length;
+
+  keys.forEach(function(port) {
+    fetchWithTimeout('http://localhost:' + port + '/actuator/health', 2000).then(function(r) {
+      if (r && r.ok) { up++; rows += '<tr><td>' + ports[port] + '</td><td>' + port + '</td><td><span class="badge green">' + tr('up') + '</span></td></tr>'; }
+      else { rows += '<tr><td>' + ports[port] + '</td><td>' + port + '</td><td><span class="badge yellow">' + tr('down') + '</span></td></tr>'; }
+      pending--;
+      if (pending === 0) {
+        document.getElementById('svcTable').innerHTML = rows;
+        document.getElementById('statGrid').innerHTML =
+          '<div class="stat"><div class="num">' + up + '</div><div class="lbl">' + tr('srv') + ' ' + tr('up') + '</div></div>' +
+          '<div class="stat"><div class="num">' + keys.length + '</div><div class="lbl">' + tr('total') + '</div></div>' +
+          '<div class="stat"><div class="num">5</div><div class="lbl">' + tr('agents') + '</div></div>' +
+          '<div class="stat"><div class="num">22</div><div class="lbl">' + tr('tools') + '</div></div>';
+      }
+    });
+  });
+}
+
+function loadServices(el) {
+  el.innerHTML = '<div class="card"><h3>' + tr('services') + '</h3><table><thead><tr><th>' + tr('srv') + '</th><th>' + tr('port') + '</th><th>' + tr('status') + '</th><th>' + tr('health') + '</th></tr></thead><tbody id="svcTable2"></tbody></table></div>';
+  var ports = {9090:'Model Gateway',9091:'Knowledge Engine',9092:'MCP Registry',9093:'Secure Exec',9094:'Evolution',9095:'Agent Runtime',9096:'Goal Engine',9097:'Control Plane'};
+  var rows = '';
+  var keys = Object.keys(ports);
+  var pending = keys.length;
+
+  keys.forEach(function(port) {
+    fetchWithTimeout('http://localhost:' + port + '/actuator/health', 2000).then(function(r) {
+      if (r && r.ok) { rows += '<tr><td>' + ports[port] + '</td><td>' + port + '</td><td><span class="badge green">' + tr('up') + '</span></td><td>UP</td></tr>'; }
+      else { rows += '<tr><td>' + ports[port] + '</td><td>' + port + '</td><td><span class="badge yellow">' + tr('down') + '</span></td><td>-</td></tr>'; }
+      pending--;
+      if (pending === 0) document.getElementById('svcTable2').innerHTML = rows;
+    });
+  });
+}
+
+function loadTenants(el) {
+  el.innerHTML = '<div class="card"><h3>' + tr('tenants') + '</h3><table><thead><tr><th>' + tr('name') + '</th><th>' + tr('plan') + '</th><th>' + tr('status') + '</th><th>' + tr('created') + '</th></tr></thead><tbody id="tenantTable"><tr><td colspan="4">' + tr('noTenants') + '</td></tr></tbody></table></div>';
+  fetchWithTimeout('http://localhost:9097/api/v1/control/tenants', 3000).then(function(r) {
+    if (r) r.json().then(function(ts) {
+      if (ts && ts.length) {
+        document.getElementById('tenantTable').innerHTML = ts.map(function(t) {
+          var planBadge = t.plan === 'free' ? 'green' : (t.plan === 'pro' ? 'blue' : 'red');
+          return '<tr><td>' + t.name + '</td><td><span class="badge ' + planBadge + '">' + tr(t.plan) + '</span></td><td>' + tr(t.status) + '</td><td>' + (t.createdAt ? t.createdAt.substring(0, 10) : '-') + '</td></tr>';
+        }).join('');
+      }
+    });
+  });
+}
+
+function loadUsers(el) {
+  el.innerHTML = '<div class="card"><h3>' + tr('users') + '</h3><table><thead><tr><th>' + tr('name') + '</th><th>' + tr('email') + '</th><th>' + tr('role') + '</th><th>' + tr('status') + '</th></tr></thead><tbody><tr><td colspan="4">' + tr('noTenants') + '</td></tr></tbody></table></div>';
+  fetchWithTimeout('http://localhost:9097/api/v1/control/tenants', 3000).then(function(r) {
+    if (r) r.json().then(function(ts) {
+      if (ts && ts.length) {
+        fetchWithTimeout('http://localhost:9097/api/v1/control/users?tenantId=' + ts[0].id, 3000).then(function(r2) {
+          if (r2) r2.json().then(function(us) {
+            if (us && us.length) {
+              el.querySelector('tbody').innerHTML = us.map(function(u) {
+                return '<tr><td>' + u.name + '</td><td>' + u.email + '</td><td><span class="badge blue">' + u.role + '</span></td><td><span class="badge green">' + tr('active') + '</span></td></tr>';
+              }).join('');
+            }
+          });
+        });
+      }
+    });
+  });
+}
+
+function loadBilling(el) {
+  el.innerHTML = '<div class="grid" id="billGrid" style="grid-template-columns:1fr 1fr"></div>';
+  fetchWithTimeout('http://localhost:9097/api/v1/control/tenants', 3000).then(function(r) {
+    if (r) r.json().then(function(ts) {
+      if (ts && ts.length) {
+        fetchWithTimeout('http://localhost:9097/api/v1/control/billing/' + ts[0].id, 3000).then(function(r2) {
+          if (r2) r2.json().then(function(bill) {
+            if (bill && !bill.error) {
+              document.getElementById('billGrid').innerHTML =
+                '<div class="card"><h3>' + tr('subscription') + '</h3>' +
+                '<div class="row"><span class="lbl">' + tr('plan') + '</span><span class="val">' + tr(bill.plan) + '</span></div>' +
+                '<div class="row"><span class="lbl">' + tr('basePrice') + '</span><span class="val">$' + bill.basePrice + '/' + tr('month') + '</span></div>' +
+                '<div class="row"><span class="lbl">' + tr('overage') + '</span><span class="val">$' + bill.overage + '</span></div>' +
+                '<div class="row"><span class="lbl">Total</span><span class="val">$' + bill.total + '</span></div></div>' +
+                '<div class="card"><h3>' + tr('usage') + '</h3>' +
+                '<div class="row"><span class="lbl">API Tokens</span><span class="val">12,450</span></div>' +
+                '<div class="row"><span class="lbl">Tool Calls</span><span class="val">328</span></div>' +
+                '<div class="row"><span class="lbl">Agent Tasks</span><span class="val">156</span></div>' +
+                '<div class="row"><span class="lbl">Monthly Records</span><span class="val">2.4K</span></div></div>';
+            }
+          });
+        });
+      }
+    });
+  });
+}
+
+// ====== Event binding ======
+document.addEventListener('DOMContentLoaded', function() {
+  loadTheme();
+  applyLang();
+
+  document.getElementById('langBtn').addEventListener('click', toggleLang);
+  document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+
+  document.querySelectorAll('.nav-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+      switchPage(this.dataset.page);
+    });
+  });
+
+  loadPage('dashboard');
+});
+</script>
+</body>
+</html>

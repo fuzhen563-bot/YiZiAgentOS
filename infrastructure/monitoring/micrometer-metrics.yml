@@ -1,0 +1,125 @@
+# Phase 2: Observability Layer Configuration
+# Management endpoints and metrics exposed via Spring Boot Actuator + Micrometer
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        ai.model.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
+        ai.model.requests: 0.5, 0.9, 0.95, 0.99
+      slo:
+        http.server.requests: 100ms, 200ms, 500ms, 1s, 2s
+
+---
+# Agent-specific business metrics
+ai:
+  model:
+    requests:
+      total:
+        type: counter
+        description: Total number of LLM API requests
+      success:
+        type: counter
+        description: Successful LLM API requests
+      failure:
+        type: counter
+        description: Failed LLM API requests
+      latency:
+        type: timer
+        description: LLM API request latency
+      tokens:
+        prompt:
+          type: counter
+          description: Total prompt tokens consumed
+        completion:
+          type: counter
+          description: Total completion tokens generated
+
+agent:
+  tasks:
+    total:
+      type: counter
+      description: Total agent tasks executed
+    success:
+      type: counter
+      description: Successfully completed agent tasks
+    failure:
+      type: counter
+      description: Failed agent tasks
+    active:
+      type: gauge
+      description: Currently active agent tasks
+    duration:
+      type: timer
+      description: Agent task execution duration
+
+  conversations:
+    total:
+      type: counter
+      description: Total conversations created
+    messages:
+      type: counter
+      description: Total messages processed
+    active:
+      type: gauge
+      description: Currently active conversations
+
+tool:
+  invocations:
+    total:
+      type: counter
+      description: Total tool invocations
+    success:
+      type: counter
+      description: Successful tool invocations
+    failure:
+      type: counter
+      description: Failed tool invocations
+    duration:
+      type: timer
+      description: Tool invocation duration
+
+skill:
+  executions:
+    total:
+      type: counter
+      description: Total skill executions
+    success:
+      type: counter
+      description: Successful skill executions
+    cache_hits:
+      type: counter
+      description: Skill cache hits
+
+mcp:
+  server:
+    connections:
+      type: gauge
+      description: Active MCP server connections
+    requests:
+      total:
+        type: counter
+        description: Total MCP requests
+      latency:
+        type: timer
+        description: MCP request latency

@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentos-server
+  namespace: agentos
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: agentos-server
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: agentos-server
+        version: latest
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: agentos-server
+          image: ghcr.io/agentos/agentos/agentos-server:latest
+          ports:
+            - containerPort: 18088
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "postgres"
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: agentos-config
+                  key: DATABASE_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: agentos-config
+                  key: DATABASE_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: agentos-config
+                  key: DATABASE_NAME
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: agentos-config
+                  key: DATABASE_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: agentos-secrets
+                  key: DB_PASSWORD
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: agentos-config
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: agentos-config
+                  key: REDIS_PORT
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 18088
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 18088
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          volumeMounts:
+            - name: agentos-data
+              mountPath: /app/data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentos-server
+  namespace: agentos
+spec:
+  selector:
+    app: agentos-server
+  ports:
+    - port: 80
+      targetPort: 18088
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agentos-ingress
+  namespace: agentos
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "200m"
+spec:
+  rules:
+    - host: agentos.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: agentos-server
+                port:
+                  number: 80

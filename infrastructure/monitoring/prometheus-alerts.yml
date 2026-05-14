@@ -1,0 +1,146 @@
+groups:
+  - name: agentos-alerts
+    interval: 30s
+    rules:
+      - alert: AgentServerDown
+        expr: up{job="agentos-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AgentOS Server is down"
+          description: "AgentOS server has been down for more than 1 minute"
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+          / sum(rate(http_server_requests_seconds_count[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "HTTP 5xx error rate is above 5% for 5 minutes"
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le))
+          > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected"
+          description: "P95 latency is above 2 seconds for 5 minutes"
+
+      - alert: LLMModelFailure
+        expr: |
+          sum(rate(ai_model_requests_failure_total[5m]))
+          / sum(rate(ai_model_requests_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "LLM model failure rate high"
+          description: "LLM API failure rate is above 10% for 5 minutes"
+
+      - alert: DatabaseConnectionExhausted
+        expr: |
+          hikaricp_connections_active > hikaricp_connections_max * 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection pool exhausted"
+          description: " HikariCP active connections are above 90% of max"
+
+      - alert: RedisConnectionFailed
+        expr: |
+          redis_connection_status{status="down"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis connection failure"
+          description: "Redis connection is down"
+
+      - alert: TokenUsageHigh
+        expr: |
+          sum(rate(ai_model_tokens_total[1h])) > 10000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High token consumption"
+          description: "Token usage is significantly higher than normal"
+
+      - alert: ActiveTasksHigh
+        expr: |
+          agent_tasks_active > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of active tasks"
+          description: "There are over 100 active agent tasks running"
+
+      - alert: DiskSpaceLow
+        expr: |
+          disk_free_bytes / disk_total_bytes < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space"
+          description: "Available disk space is below 10%"
+
+      - alert: MemoryPressure
+        expr: |
+          jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM heap memory pressure"
+          description: "JVM heap usage is above 90%"
+
+      - alert: MCPConnectionFailed
+        expr: |
+          mcp_server_connections{status="down"} > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MCP server connection failure"
+          description: "One or more MCP servers are unreachable"
+
+      - alert: AgentTaskStuck
+        expr: |
+          agent_task_duration_seconds{status="running"} > 600
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agent task appears stuck"
+          description: "An agent task has been running for more than 10 minutes"
+
+      - alert: GrafanaHealth
+        expr: |
+          up{job="grafana"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Grafana is down"
+          description: "Grafana has been unreachable for 1 minute"
+
+      - alert: LokiHealth
+        expr: |
+          up{job="loki"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Loki is down"
+          description: "Loki has been unreachable for 2 minutes"
+          runbook_url: "https://wiki.agentos.com/runbooks/loki-down"

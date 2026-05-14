@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-execution
+  namespace: agentos
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: secure-execution
+  template:
+    metadata:
+      labels:
+        app: secure-execution
+    spec:
+      containers:
+        - name: secure-execution
+          image: ghcr.io/agentos/agentos/secure-execution:latest
+          ports:
+            - containerPort: 9093
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 9093
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 9093
+            initialDelaySeconds: 15
+            periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: secure-execution
+  namespace: agentos
+spec:
+  selector:
+    app: secure-execution
+  ports:
+    - port: 80
+      targetPort: 9093

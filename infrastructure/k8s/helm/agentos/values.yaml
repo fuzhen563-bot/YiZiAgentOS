@@ -1,0 +1,93 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/agentos/agentos/agentos-server
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: ghcr-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 18088
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  host: agentos.example.com
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "200m"
+
+updateStrategy: RollingUpdate
+rollingUpdate:
+  maxSurge: 1
+  maxUnavailable: 0
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health
+    port: 18088
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  failureThreshold: 3
+  successThreshold: 1
+  timeoutSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health
+    port: 18088
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+  timeoutSeconds: 3
+
+persistence:
+  enabled: true
+  size: 10Gi
+  existingClaim: ""
+
+env:
+  SPRING_PROFILES_ACTIVE: "postgres"
+  JAVA_OPTS: "-Xmx2g -Xms512m"
+
+config:
+  database:
+    host: "postgres-postgresql.agentos-infra.svc.cluster.local"
+    port: 5432
+    name: "agentos"
+    username: "agentos"
+    password: "CHANGE_ME"
+  redis:
+    host: "redis-master.agentos-infra.svc.cluster.local"
+    port: 6379
+  qdrant:
+    url: "http://qdrant.agentos-infra.svc.cluster.local:6333"
+  minio:
+    endpoint: "minio.agentos-infra.svc.cluster.local:9000"
+  s3:
+    accessKey: "agentos"
+    secretKey: "CHANGE_ME"
+  jwt:
+    secret: "CHANGE_ME_AT_LEAST_32_CHARS"
+  grafana:
+    password: "admin123"

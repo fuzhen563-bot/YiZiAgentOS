@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agentos.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentos.labels" . | nindent 4 }}
+data:
+  DATABASE_HOST: "{{ .Values.config.database.host }}"
+  DATABASE_PORT: "{{ .Values.config.database.port }}"
+  DATABASE_NAME: "{{ .Values.config.database.name }}"
+  DATABASE_USERNAME: "{{ .Values.config.database.username }}"
+  REDIS_HOST: "{{ .Values.config.redis.host }}"
+  REDIS_PORT: "{{ .Values.config.redis.port }}"
+  QDRANT_URL: "{{ .Values.config.qdrant.url }}"
+  MINIO_ENDPOINT: "{{ .Values.config.minio.endpoint }}"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "agentos.fullname" . }}-secrets
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentos.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  DB_PASSWORD: "{{ .Values.config.database.password }}"
+  S3_ACCESS_KEY: "{{ .Values.config.s3.accessKey }}"
+  S3_SECRET_KEY: "{{ .Values.config.s3.secretKey }}"
+  JWT_SECRET: "{{ .Values.config.jwt.secret }}"
+  GRAFANA_PASSWORD: "{{ .Values.config.grafana.password }}"

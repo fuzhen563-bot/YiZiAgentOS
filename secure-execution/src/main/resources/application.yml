@@ -1,0 +1,10 @@
+server:
+  port: 9093
+spring:
+  application:
+    name: secure-execution
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

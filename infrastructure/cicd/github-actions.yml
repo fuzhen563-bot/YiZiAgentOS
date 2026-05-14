@@ -1,0 +1,149 @@
+name: Build and Push AgentOS
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    outputs:
+      backend_version: ${{ steps.vars.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: vars
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Build mateclaw-plugin-api
+        run: |
+          cd mateclaw-dev/mateclaw-plugin-api
+          mvn install -DskipTests -q
+
+      - name: Build mateclaw-server with frontend
+        run: |
+          cd mateclaw-dev/mateclaw-server
+          mvn package -DskipTests -q
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mateclaw-dev
+          dockerfile: ./infrastructure/docker/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/agentos-server:${{ steps.vars.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/agentos-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/agentos-server.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentos-server
+          path: /tmp/agentos-server.tar
+          retention-days: 1
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '9'
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: mateclaw-dev/mateclaw-ui
+
+      - name: Build
+        run: pnpm build
+        working-directory: mateclaw-dev/mateclaw-ui
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentos-frontend
+          path: mateclaw-dev/mateclaw-ui/dist
+          retention-days: 1
+
+  deploy:
+    needs: build-backend
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: agentos-server
+          path: /tmp
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/agentos-server agentos-server=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/agentos-server:${{ needs.build-backend.outputs.backend_version }}
+          kubectl rollout status deployment/agentos-server -n agentos --timeout=300s

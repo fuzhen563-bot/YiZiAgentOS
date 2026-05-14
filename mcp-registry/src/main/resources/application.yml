@@ -1,0 +1,10 @@
+server:
+  port: 9092
+spring:
+  application:
+    name: mcp-registry
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
