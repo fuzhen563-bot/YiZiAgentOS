@@ -187,9 +187,11 @@ python3 -m http.server 8080
 ---
 
 ## 开发人员
-@xiaoqianlan
 
-[@fuzhen563-bot](https://github.com/fuzhen563-bot)
+[浅蓝](https://github.com/xiaoqianlan)
+
+[星河](https://github.com/fuzhen563-bot)
+
 ---
 
 ##  License
