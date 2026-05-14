@@ -190,7 +190,7 @@ python3 -m http.server 8080
 
 [浅蓝](https://github.com/xiaoqianlan)
 
-  <img src="https://avatars.githubusercontent.com/u/264582459?v=4&size=40" alt="亦梓AgentOS Logo" width="200">()[星河](https://github.com/fuzhen563-bot)
+  <img src="https://avatars.githubusercontent.com/u/264582459?v=4&size=40" alt="亦梓AgentOS Logo" width="18">[星河](https://github.com/fuzhen563-bot)
 
 ---
 
