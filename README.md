@@ -188,7 +188,7 @@ python3 -m http.server 8080
 
 ## 开发人员
 
-  <img src="https://avatars.githubusercontent.com/u/264582459?v=4&size=40" alt="亦梓AgentOS Logo" width="49">
+  <img src="https://avatars.githubusercontent.com/u/59960858?s=64&v=4" alt="亦梓AgentOS Logo" width="49">
 
 [浅蓝](https://github.com/xiaoqianlan)
 
